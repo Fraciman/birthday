@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>❤️ Heart Photo Collage</title>
+<link rel="stylesheet" href="css/style.css" />
+<script src="js/config.js"></script>
+<style>canvas#confetti{position:fixed;inset:0;pointer-events:none}</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="container">
+  <div class="panel">
+    <div class="row" style="align-items:center; justify-content:space-between">
+      <h1>❤️ Heart Photo Collage</h1>
+      <span class="badge">Birthday Mode</span>
+    </div>
+    <p class="lead">Photos from <code>assets/img</code> are drawn along a heart. Edit <code>js/config.js</code> to set <code>name</code>, <code>from</code>, <code>message</code>, and <code>photos</code>.</p>
+    <canvas id="cvs" width="1400" height="1200"></canvas>
+    <div class="row" style="margin-top:12px">
+      <button class="btn primary" id="confettiBtn">🎊 Confetti</button>
+      <button class="btn ghost" id="exportBtn">⬇️ Export PNG</button>
+    </div>
+    <p class="small">Tip: Use JPG ~1500px wide for best balance of quality and loading speed.</p>
+  </div>
+</div>
+<script>
+  const cvs = document.getElementById('cvs'), ctx = cvs.getContext('2d');
+  const cfg = window.SITE || {name:'my love', from:'me', message:'', photos:[]};
+
+  // load images
+  let photos = [];
+  function loadAll(list){
+    return Promise.all(list.map(src => new Promise((resolve)=>{
+      const img = new Image();
+      img.onload = ()=> resolve({src, img});
+      img.onerror = ()=> resolve(null);
+      img.src = 'assets/img/' + src;
+      img.crossOrigin = 'anonymous';
+    }))).then(arr => arr.filter(Boolean));
+  }
+
+  function heartPoint(t, scale=36){
+    const x = 16*Math.sin(t)**3;
+    const y = 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
+    return {x:x*scale, y:-y*scale};
+  }
+
+  function draw(){
+    const w=cvs.width, h=cvs.height;
+    ctx.clearRect(0,0,w,h);
+    ctx.save();
+    ctx.translate(w/2, h/2);
+
+    // outline
+    ctx.beginPath();
+    for(let i=0;i<=360;i++){
+      const t = (i/360)*Math.PI*2, p = heartPoint(t, 36);
+      if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.lineWidth=2; ctx.strokeStyle='rgba(239,68,68,.6)'; ctx.stroke();
+
+    // photos
+    const n = photos.length;
+    const baseR = n<=6 ? 110 : n<=12 ? 90 : n<=20 ? 72 : 58;
+    for(let i=0;i<n;i++){
+      const t = (i/n)*Math.PI*2;
+      const p = heartPoint(t, 36);
+      const r = Math.max(36, baseR - i*0.6);
+      const img = photos[i].img;
+      ctx.save(); ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI*2); ctx.closePath(); ctx.clip();
+      // cover
+      const ar = img.width/img.height;
+      const size = r*2;
+      let dw=size, dh=size;
+      if(ar > 1){ dh = size; dw = ar*dh; } else { dw = size; dh = size/ar; }
+      ctx.drawImage(img, p.x - dw/2, p.y - dh/2, dw, dh);
+      ctx.restore();
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI*2); ctx.lineWidth=3; ctx.strokeStyle='white'; ctx.stroke();
+    }
+
+    // text
+    ctx.textAlign='center'; ctx.fillStyle='#111827';
+    ctx.font='700 64px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto';
+    ctx.fillText(cfg.name ? `Happy Birthday, ${cfg.name}!` : 'Happy Birthday, my love!', 0, -360);
+    ctx.font='400 28px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto';
+    wrapText(ctx, cfg.message || 'You are my favorite chapter in every story I tell myself. Wishing you a year of soft mornings, loud laughs, and dreams that find you. ❤️', 0, 340, 880, 36);
+    ctx.font='600 24px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto';
+    ctx.fillText(cfg.from ? `— ${cfg.from}` : '— from me', 0, 430);
+
+    ctx.restore();
+  }
+
+  function wrapText(ctx, text, x, y, maxWidth, lineHeight){
+    const words = text.split(' ');
+    let line = '';
+    for(let n=0; n<words.length; n++){
+      const test = line + words[n] + ' ';
+      if(ctx.measureText(test).width > maxWidth && n>0){
+        ctx.fillText(line, x, y); line = words[n] + ' '; y += lineHeight;
+      } else { line = test; }
+    }
+    ctx.fillText(line, x, y);
+  }
+
+  // export
+  document.getElementById('exportBtn').onclick = ()=>{
+    const a = document.createElement('a');
+    a.download = 'heart_collage.png';
+    a.href = cvs.toDataURL('image/png');
+    a.click();
+  };
+
+  // confetti
+  const confettiCanvas = document.getElementById('confetti');
+  const confCtx = confettiCanvas.getContext('2d');
+  function size(){ confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight; }
+  addEventListener('resize', size); size();
+  let confetti = [];
+  function burst(n=220){
+    const rect = cvs.getBoundingClientRect();
+    const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+    for(let i=0;i<n;i++){
+      confetti.push({ x: cx, y: cy, vx: (Math.random()*2-1)*(6+Math.random()*6), vy:(Math.random()*2-1)*(6+Math.random()*6), g:0.15+Math.random()*0.15, s:2+Math.random()*4, a:1 });
+    }
+  }
+  function step(){
+    confCtx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+    for(const p of confetti){ p.vy += p.g; p.x += p.vx; p.y += p.vy; p.a -= 0.006; }
+    confetti = confetti.filter(p=>p.a>0 && p.y < confettiCanvas.height+10 && p.x>-10 && p.x<confettiCanvas.width+10);
+    for(const p of confetti){
+      confCtx.globalAlpha = Math.max(0,p.a);
+      confCtx.fillStyle = `hsl(${(p.x+p.y)%360} 90% 60%)`;
+      confCtx.fillRect(p.x,p.y,p.s,p.s*2);
+    }
+    requestAnimationFrame(step);
+  }
+  step();
+  document.getElementById('confettiBtn').onclick = ()=> burst(260);
+
+  // init
+  loadAll(cfg.photos).then(arr => { photos = arr; draw(); });
+</script>
+</body>
+</html>
