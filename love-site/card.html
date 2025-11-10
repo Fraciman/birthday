@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>🎂 A Birthday Wish For You</title>
+<link rel="stylesheet" href="css/style.css" />
+<style>
+  .wrap{min-height:100vh; display:grid; place-items:center; padding: 32px 20px 60px;}
+  .card{
+    position:relative; width:min(820px, 92vw); background:var(--card); backdrop-filter: blur(6px);
+    border-radius: 24px; box-shadow: 0 20px 80px rgba(0,0,0,.16);
+    padding: clamp(20px, 4vw, 40px);
+  }
+  .ribbon{position:absolute; inset:auto -8px -8px auto; background: linear-gradient(90deg,#ef4444,#f59e0b); color:white; padding:10px 14px; border-radius: 999px; font-weight:700; box-shadow:0 10px 20px rgba(0,0,0,.15);}
+  h1{margin:0 0 8px; font-size: clamp(32px, 5vw, 56px); line-height:1.05}
+  .type{border-right: 3px solid var(--accent); white-space: nowrap; overflow: hidden}
+  .sub{opacity:.85; margin:0 0 20px; font-size: clamp(16px, 2.5vw, 20px)}
+  blockquote{margin:16px 0 26px; padding: 16px 20px; border-left: 4px solid var(--accent); background:#fff8; border-radius: 12px; font-size: clamp(18px, 2.4vw, 22px)}
+  .sig{margin-top: 14px; font-weight:600}
+  .ctaRow{display:flex; flex-wrap:wrap; gap:12px; margin-top: 18px}
+  button{border:0; padding:12px 16px; border-radius: 12px; cursor:pointer; font-weight:700}
+  .primary{background:var(--accent); color:white}
+  .ghost{background:#00000008}
+  .fields{display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:14px}
+  .fields input, .fields textarea{width:100%; padding:10px 12px; border-radius:10px; border:1px solid #e5e7eb; background:white; font: inherit; resize: vertical}
+</style>
+<script src="js/config.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="card">
+    <div class="ribbon">🎉 Happy Birthday!</div>
+    <h1 class="type" id="headline"></h1>
+    <p class="sub" id="subtitle"></p>
+    <blockquote id="quote"></blockquote>
+    <div class="sig" id="signature"></div>
+    <div class="ctaRow">
+      <button class="primary" id="copyLink">🔗 Copy & Share</button>
+      <button class="ghost" id="copyMessage">💌 Copy Message</button>
+    </div>
+  </div>
+</div>
+<script>
+  const cfg = window.SITE || {name:'my love', from:'me', message:''};
+  const openers = [
+    name => `Happy Birthday, ${name} ✨`,
+    name => `To ${name}, on your special day 💖`,
+    name => `Selamat Hari Lahir, ${name} 🎂`
+  ];
+  function hash(s){ let h=0; for(const ch of s) h=(h*31 + ch.charCodeAt(0))|0; return Math.abs(h); }
+  const recipient = (cfg.name||'my love');
+  const idx = hash(recipient)%openers.length;
+  const quotes = [
+    `“In a world full of ordinary days, you are my favorite moment. May your heart feel as loved as it makes mine feel, every day.”`,
+    `“You’re the reason I smile a little brighter, laugh a little louder, and love a little deeper.”`,
+    `“Jika aku boleh hadiahkan satu perkara hari ini, biarlah kau melihat dirimu melalui mataku — barulah kau tahu betapa istimewanya dirimu.”`,
+    `“Today I celebrate you — your laugh, your light, your kind heart. Thank you for being my home.”`
+  ];
+  document.getElementById('headline').textContent = openers[idx](recipient);
+  document.getElementById('subtitle').textContent = `Wishing you a year of gentle mornings, loud laughs, and dreams that find their way to you.`;
+  document.getElementById('quote').textContent = cfg.message || quotes[hash(recipient+'q')%quotes.length];
+  document.getElementById('signature').textContent = `— ${cfg.from||'from me'}`;
+  document.getElementById('copyLink').onclick = async ()=>{
+    await navigator.clipboard.writeText(location.href);
+    alert('Link copied!');
+  };
+  document.getElementById('copyMessage').onclick = async ()=>{
+    const msg = `${document.getElementById('headline').textContent}\n${document.getElementById('quote').textContent}\n— ${cfg.from||'from me'}`;
+    await navigator.clipboard.writeText(msg);
+    alert('Message copied!');
+  };
+</script>
+</body>
+</html>
